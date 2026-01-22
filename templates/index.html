@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Germline Classification Predictor</title>
+
+    <!-- Google Font for medical-style UI -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            font-family: 'Inter', sans-serif;
+
+            /* soft medical gradient */
+            background: linear-gradient(135deg, #e8f3ff 0%, #f8fcff 100%);
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            width: 500px;
+            border-radius: 18px;
+
+            /* soft medical card shadow */
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+
+            border: 1px solid #dce9f7;
+
+            text-align: center;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: #2a4d89;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        h2 {
+            color: #3c6bb8;
+            font-size: 18px;
+            margin-bottom: 8px;
+            margin-top: 20px;
+            font-weight: 600;
+            border-bottom: 1px solid #d1e1f5;
+            padding-bottom: 6px;
+            width: 70%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .line {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #bcd3ec;
+            border-radius: 8px;
+            width: 90px;
+            font-size: 15px;
+            text-align: center;
+            transition: 0.2s;
+            background: #f9fcff;
+        }
+
+        input[type="text"]:focus {
+            border-color: #6fa8ff;
+            box-shadow: 0 0 6px rgba(111,168,255,0.4);
+            background: white;
+        }
+
+        .small { width: 65px; }
+
+        .error-text {
+            color: #d11a1a;
+            font-size: 13px;
+            height: 16px;
+        }
+
+        input[type="submit"] {
+            margin-top: 20px;
+            padding: 14px;
+            width: 100%;
+
+            background: #3f78ff;
+            background: linear-gradient(135deg, #4f89ff 0%, #2f6fff 100%);
+
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 17px;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: 0.2s;
+        }
+
+        input[type="submit"]:hover {
+            background: linear-gradient(135deg, #3b7aff 0%, #1c5df7 100%);
+            transform: translateY(-2px);
+        }
+
+        .prediction-box {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e9f1ff;
+            border-radius: 12px;
+            border: 1px solid #c9daf7;
+            font-size: 17px;
+            color: #1f3f77;
+            text-align: left;
+        }
+
+        .prediction-box strong {
+            color: #254d94;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <h1>Germline Classification Predictor</h1>
+
+    <form method="POST" id="mutationForm">
+
+        <!-- CDS -->
+        <h2>CDS Mutation</h2>
+        <div class="line">
+            <span>c.</span>
+            <input type="text" name="cds_pos" class="small" id="cds_pos">
+            <input type="text" name="cds_from" class="small" id="cds_from">
+            <span>&gt;</span>
+            <input type="text" name="cds_to" class="small" id="cds_to">
+        </div>
+        <div class="error-text" id="cds_error"></div>
+
+        <!-- AA -->
+        <h2>AA Mutation</h2>
+        <div class="line">
+            <span>p.</span>
+            <input type="text" name="aa_from" class="small" id="aa_from">
+            <input type="text" name="aa_pos" class="small" id="aa_pos">
+            <input type="text" name="aa_to" class="small" id="aa_to">
+        </div>
+        <div class="error-text" id="aa_error"></div>
+
+        <input type="submit" value="Predict">
+    </form>
+
+    {% if prediction %}
+        <div class="prediction-box">
+            <strong>CDS Mutation:</strong> c.{{ cds_full }}<br>
+            <strong>AA Mutation:</strong> p.{{ aa_full }}<br><br>
+            <strong>Prediction:</strong> {{ prediction }}
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    const rules = {
+        cds_pos: /^[1-9][0-9]{0,3}$/,
+        cds_from: /^[A-Z]$/,
+        cds_to: /^[A-Z]$/,
+        aa_from: /^[A-Z=*]$/,
+        aa_pos: /^[1-9][0-9]{0,3}$/,
+        aa_to: /^[A-Z=*]$/
+    };
+
+    document.getElementById("mutationForm").addEventListener("submit", function (e) {
+
+        let cdsValid = true;
+        let aaValid = true;
+
+        const cds_pos = document.getElementById("cds_pos").value.trim();
+        const cds_from = document.getElementById("cds_from").value.trim();
+        const cds_to = document.getElementById("cds_to").value.trim();
+
+        const aa_from = document.getElementById("aa_from").value.trim();
+        const aa_pos = document.getElementById("aa_pos").value.trim();
+        const aa_to = document.getElementById("aa_to").value.trim();
+
+        // Validate CDS
+        if (!rules.cds_pos.test(cds_pos) ||
+            !rules.cds_from.test(cds_from) ||
+            !rules.cds_to.test(cds_to)) {
+            cdsValid = false;
+        }
+
+        // Validate AA
+        if (!rules.aa_from.test(aa_from) ||
+            !rules.aa_pos.test(aa_pos) ||
+            !rules.aa_to.test(aa_to)) {
+            aaValid = false;
+        }
+
+        document.getElementById("cds_error").innerText = cdsValid ? "" : "CDS: Position 1–9999, letters A–Z only";
+        document.getElementById("aa_error").innerText = aaValid ? "" : "AA: Position 1–9999, letters A–Z, =, *";
+
+        // Stop submit if invalid
+        if (!cdsValid || !aaValid) {
+            e.preventDefault();
+            return false;
+        }
+
+        // Clear inputs AFTER successful submission
+        setTimeout(() => {
+            document.getElementById("mutationForm").reset();
+        }, 50);
+    });
+</script>
+
+</body>
+</html>
