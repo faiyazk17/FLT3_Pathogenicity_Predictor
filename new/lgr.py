@@ -111,7 +111,8 @@ rf = RandomForestClassifier(
     class_weight="balanced",
     random_state=42
 )
-#  Changing max_depth to 5 actually reduced performance.
+#  Changing max depth to 5 actually reduced performance.
+
 # rf = RandomForestClassifier(
 #     n_estimators=300,
 #     class_weight="balanced",
