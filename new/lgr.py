@@ -100,3 +100,32 @@ print(coef_df.sort_values("coef", ascending=False).head(15)[["feature","coef"]])
 
 print("\nTop features decreasing pathogenic risk (more benign):")
 print(coef_df.sort_values("coef", ascending=True).head(15)[["feature","coef"]])
+
+
+# Building Random Forest classifier 
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import cross_validate
+
+rf = RandomForestClassifier(
+    n_estimators=300,
+    class_weight="balanced",
+    random_state=42
+)
+#  Changing max_depth to 5 actually reduced performance.
+# rf = RandomForestClassifier(
+#     n_estimators=300,
+#     class_weight="balanced",
+#     max_depth=5,  # limit tree depth
+#     random_state=42
+# )
+
+results_rf = cross_validate(
+    rf,
+    X_encoded,
+    y,
+    cv=skf,
+    scoring=["accuracy","precision","recall","f1","roc_auc"]
+)
+
+for m in ["accuracy","precision","recall","f1","roc_auc"]:
+    print("RF", m, ":", results_rf["test_"+m].mean())
