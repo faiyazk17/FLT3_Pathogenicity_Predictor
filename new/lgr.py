@@ -52,3 +52,51 @@ print("\nConfusion matrix:\n", confusion_matrix(y_test, y_pred))
 print("\nROC-AUC:", roc_auc_score(y_test, y_prob))
 print("\nReport:\n", classification_report(y_test, y_pred, zero_division=0))
 
+
+#hyperparameter tuning 
+from sklearn.model_selection import GridSearchCV
+
+param_grid = {
+    "model__C": [0.01, 0.1, 1, 5, 10, 50]
+}
+
+grid = GridSearchCV(
+    pipeline,
+    param_grid,
+    cv=5,
+    scoring="roc_auc"
+)
+
+grid.fit(X_encoded, y)
+
+print("Best C:", grid.best_params_)
+print("Best ROC-AUC:", grid.best_score_)
+
+#model with best C
+best_model = grid.best_estimator_
+
+results = cross_validate(
+    best_model,
+    X_encoded, y,
+    cv=skf,
+    scoring=["accuracy","precision","recall","f1","roc_auc"]
+)
+
+for m in ["accuracy","precision","recall","f1","roc_auc"]:
+    print(m, ":", results["test_"+m].mean())
+    
+#interpreting the model with the best c
+import numpy as np
+
+best_model.fit(X_encoded, y)
+coefs = best_model.named_steps["model"].coef_[0]
+feat_names = X_encoded.columns
+
+coef_df = pd.DataFrame({"feature": feat_names, "coef": coefs})
+coef_df["abs"] = coef_df["coef"].abs()
+
+print("Top features increasing pathogenic risk:")
+print(coef_df.sort_values("coef", ascending=False).head(15)[["feature","coef"]])
+
+print("\nTop features decreasing pathogenic risk (more benign):")
+print(coef_df.sort_values("coef", ascending=True).head(15)[["feature","coef"]])
