@@ -7,32 +7,24 @@ import re
 import webbrowser
 from threading import Timer
 
-# -------------------------
 # Helper to access resources (works with PyInstaller)
-# -------------------------
 def resource_path(relative_path):
     base_path = getattr(sys, "_MEIPASS", os.path.abspath("."))
     return os.path.join(base_path, relative_path)
 
-# -------------------------
 # Flask app
-# -------------------------
 app = Flask(
     __name__,
     template_folder=resource_path("templates")
 )
 app.secret_key = "dev"
 
-# -------------------------
 # Regex helpers
-# -------------------------
 POS_RE = re.compile(r"^[1-9][0-9]{0,3}$")  # 1-9999
 BASE_RE = re.compile(r"^[A-Z]$")
 AA_LETTER_RE = re.compile(r"^[A-Z\=\*]$")
 
-# -------------------------
 # Load models, scalers, and feature columns
-# -------------------------
 rf_model = joblib.load(resource_path("rf_model.joblib"))
 rf_columns = joblib.load(resource_path("model_columns.joblib"))
 
@@ -44,9 +36,7 @@ gb_model = joblib.load(resource_path("gb_model.joblib"))
 gb_scaler = joblib.load(resource_path("gb_scaler.joblib"))
 gb_columns = joblib.load(resource_path("gb_columns.joblib"))
 
-# -------------------------
 # Preprocessing helper
-# -------------------------
 def preprocess_input(df, columns, scaler=None):
     df_enc = pd.get_dummies(df, columns=df.columns, prefix=df.columns)
     df_enc = df_enc.reindex(columns=columns, fill_value=0)
@@ -54,9 +44,7 @@ def preprocess_input(df, columns, scaler=None):
         df_enc = scaler.transform(df_enc)
     return df_enc
 
-# -------------------------
 # Ensemble prediction helper
-# -------------------------
 def ensemble_predict(input_df):
     # Preprocess each model input
     rf_input = preprocess_input(input_df.copy(), rf_columns)
@@ -87,9 +75,7 @@ def ensemble_predict(input_df):
 
     return final
 
-# -------------------------
 # Form validation
-# -------------------------
 def validate_and_normalize(form):
     cds_pos_raw = form.get("cds_pos", "").strip()
     cds_from_raw = form.get("cds_from", "").strip()
@@ -128,9 +114,7 @@ def validate_and_normalize(form):
         "aa_to": aa_to
     }
 
-# -------------------------
 # Routes
-# -------------------------
 @app.route("/", methods=["GET", "POST"])
 def index():
     prediction = None
@@ -183,9 +167,7 @@ def index():
         form_values=form_values
     )
 
-# -------------------------
 # Main
-# -------------------------
 if __name__ == "__main__":
     def open_browser():
         webbrowser.open("http://127.0.0.1:5000")

@@ -9,9 +9,7 @@ from sklearn.metrics import (
     confusion_matrix
 )
 
-# =========================
-# CONFIGURATION
-# =========================
+# Configurations
 
 DATA_PATH = "training_dataset.xlsx"
 MODEL_PATH = "rf_model.joblib"
@@ -24,9 +22,7 @@ FEATURE_COLS = [
 
 LABEL_COL = "Germline classification"
 
-# =========================
-# LOAD DATA
-# =========================
+# Load Data
 
 print("Loading dataset...")
 df = pd.read_excel(DATA_PATH)
@@ -38,9 +34,7 @@ df["aa_pos"] = df["aa_pos"].astype(str)
 X = df[FEATURE_COLS].copy()
 y = df[LABEL_COL]
 
-# =========================
-# ONE-HOT ENCODING
-# =========================
+# One Hot Encoding
 
 print("Encoding categorical features...")
 X_enc = pd.get_dummies(
@@ -49,9 +43,7 @@ X_enc = pd.get_dummies(
     prefix=FEATURE_COLS
 )
 
-# =========================
-# TRAIN / TEST SPLIT
-# =========================
+# Train-Test Split
 
 print("Creating stratified hold-out set...")
 X_train, X_test, y_train, y_test = train_test_split(
@@ -62,9 +54,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     stratify=y
 )
 
-# =========================
-# MODEL TRAINING
-# =========================
+# Model Training
 
 print("Training Random Forest model...")
 model = RandomForestClassifier(
@@ -76,9 +66,7 @@ model = RandomForestClassifier(
 
 model.fit(X_train, y_train)
 
-# =========================
-# HOLD-OUT EVALUATION
-# =========================
+# Hold-Out Set Evaluation
 
 print("\n===== HOLD-OUT SET EVALUATION =====")
 
@@ -103,9 +91,7 @@ if cm.shape == (2, 2):
     print(f"\nFalse Negatives (Pathogenic predicted as Benign): {fn}")
     print(f"False Positives (Benign predicted as Pathogenic): {fp}")
 
-# =========================
-# SAVE ARTIFACTS
-# =========================
+# Save Model Artifacts
 
 print("\nSaving model artifacts...")
 joblib.dump(model, MODEL_PATH)
