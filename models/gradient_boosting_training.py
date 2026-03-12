@@ -1,16 +1,17 @@
 import pandas as pd
 import joblib
 import numpy as np
+import os
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-print("Loading dataset...")
-df = pd.read_excel("training_dataset.xlsx")
+print("Loading dataset from new/new_data.csv...")
+df = pd.read_csv("../new/new_data.csv")
 
-# Ensure string types
+# Ensure string types for categorical-like numerical columns
 df["cds_pos"] = df["cds_pos"].astype(str)
 df["aa_pos"] = df["aa_pos"].astype(str)
 
@@ -75,9 +76,12 @@ fp = cm[0][1]
 print(f"\nFalse Negatives (Pathogenic predicted as Benign): {fn}")
 print(f"False Positives (Benign predicted as Pathogenic): {fp}")
 
-print("\nSaving model artifacts...")
-joblib.dump(model, "gb_model.joblib")
-joblib.dump(scaler, "gb_scaler.joblib")
-joblib.dump(X_enc.columns.tolist(), "gb_model_columns.joblib")
+# Save artifacts to working_models_new
+output_dir = "../working_models_new"
+print(f"\nSaving model artifacts to {output_dir}...")
+
+joblib.dump(model, os.path.join(output_dir, "gb_model.joblib"))
+joblib.dump(scaler, os.path.join(output_dir, "gb_scaler.joblib"))
+joblib.dump(X_enc.columns.tolist(), os.path.join(output_dir, "gb_model_columns.joblib"))
 
 print("Gradient Boosting model, scaler, and feature columns saved successfully.")

@@ -24,21 +24,28 @@ POS_RE = re.compile(r"^[1-9][0-9]{0,3}$")  # 1-9999
 BASE_RE = re.compile(r"^[A-Z]$")
 AA_LETTER_RE = re.compile(r"^[A-Z\=\*]$")
 
-# Load models, scalers, and feature columns
-rf_model = joblib.load(resource_path("rf_model.joblib"))
-rf_columns = joblib.load(resource_path("model_columns.joblib"))
+# --- Load NEW models, scalers, and feature columns ---
+MODELS_DIR = "working_models_new"
 
-mlp_model = joblib.load(resource_path("mlp_model.joblib"))
-mlp_scaler = joblib.load(resource_path("mlp_scaler.joblib"))
-mlp_columns = joblib.load(resource_path("mlp_columns.joblib"))
+# Random Forest
+rf_model = joblib.load(resource_path(os.path.join(MODELS_DIR, "rf_model.joblib")))
+rf_columns = joblib.load(resource_path(os.path.join(MODELS_DIR, "model_columns.joblib")))
 
-gb_model = joblib.load(resource_path("gb_model.joblib"))
-gb_scaler = joblib.load(resource_path("gb_scaler.joblib"))
-gb_columns = joblib.load(resource_path("gb_columns.joblib"))
+# MLP
+mlp_model = joblib.load(resource_path(os.path.join(MODELS_DIR, "mlp_model.joblib")))
+mlp_scaler = joblib.load(resource_path(os.path.join(MODELS_DIR, "mlp_scaler.joblib")))
+mlp_columns = joblib.load(resource_path(os.path.join(MODELS_DIR, "mlp_model_columns.joblib")))
+
+# Gradient Boosting
+gb_model = joblib.load(resource_path(os.path.join(MODELS_DIR, "gb_model.joblib")))
+gb_scaler = joblib.load(resource_path(os.path.join(MODELS_DIR, "gb_scaler.joblib")))
+gb_columns = joblib.load(resource_path(os.path.join(MODELS_DIR, "gb_model_columns.joblib")))
 
 # Preprocessing helper
 def preprocess_input(df, columns, scaler=None):
+    # One-hot encode the input row
     df_enc = pd.get_dummies(df, columns=df.columns, prefix=df.columns)
+    # Align with the columns the model was trained on
     df_enc = df_enc.reindex(columns=columns, fill_value=0)
     if scaler:
         df_enc = scaler.transform(df_enc)
@@ -46,7 +53,7 @@ def preprocess_input(df, columns, scaler=None):
 
 # Ensemble prediction helper
 def ensemble_predict(input_df):
-    # Preprocess each model input
+    # Preprocess each model input individually using their specific column sets
     rf_input = preprocess_input(input_df.copy(), rf_columns)
     rf_pred = rf_model.predict(rf_input)[0]
 
@@ -56,21 +63,22 @@ def ensemble_predict(input_df):
     gb_input = preprocess_input(input_df.copy(), gb_columns, scaler=gb_scaler)
     gb_pred = gb_model.predict(gb_input)[0]
 
-    # Conservative voting: any pathogenic => Pathogenic
-    final = "Pathogenic" if rf_pred == 1 or mlp_pred == 1 or gb_pred == 1 else "Benign"
+    # Map numeric outputs back to labels (RF already uses string labels based on your training output)
+    # But for safety with MLP/GB which use 0/1, we check numerically
+    
+    is_pathogenic = (rf_pred == 1 or rf_pred == "Pathogenic" or 
+                    mlp_pred == 1 or 
+                    gb_pred == 1)
 
-    # Map numeric to labels for console
-    rf_label = "Pathogenic" if rf_pred == 1 else "Benign"
-    mlp_label = "Pathogenic" if mlp_pred == 1 else "Benign"
-    gb_label = "Pathogenic" if gb_pred == 1 else "Benign"
+    final = "Pathogenic" if is_pathogenic else "Benign"
 
-    # Console report
+    # Console report for debugging
     print("\n===== NEW PREDICTION =====")
     print(f"CDS: {input_df['cds_pos'].values[0]}{input_df['cds_from'].values[0]}>{input_df['cds_to'].values[0]}")
     print(f"AA: {input_df['aa_from'].values[0]}{input_df['aa_pos'].values[0]}{input_df['aa_to'].values[0]}")
-    print(f"Random Forest prediction: {rf_label}")
-    print(f"MLP prediction: {mlp_label}")
-    print(f"Gradient Boosting prediction: {gb_label}")
+    print(f"Random Forest prediction: {rf_pred}")
+    print(f"MLP prediction: {'Pathogenic' if mlp_pred == 1 else 'Benign'}")
+    print(f"Gradient Boosting prediction: {'Pathogenic' if gb_pred == 1 else 'Benign'}")
     print(f"Final Ensemble prediction: {final}")
 
     return final
@@ -102,6 +110,7 @@ def validate_and_normalize(form):
     if not AA_LETTER_RE.match(aa_to):
         return False, "AA 'to' must be A-Z or = or *."
 
+    # Convert to string to ensure matching with training dtypes
     cds_pos = str(int(cds_pos_raw))
     aa_pos = str(int(aa_pos_raw))
 
@@ -141,11 +150,12 @@ def index():
             aa_full = f"{aa_from}{aa_pos}{aa_to}"
 
             try:
+                # Prepare input row as a DataFrame
                 input_df = pd.DataFrame([{
-                    "cds_pos": str(cds_pos),
+                    "cds_pos": cds_pos,
                     "cds_from": cds_from,
                     "cds_to": cds_to,
-                    "aa_pos": str(aa_pos),
+                    "aa_pos": aa_pos,
                     "aa_from": aa_from,
                     "aa_to": aa_to
                 }])

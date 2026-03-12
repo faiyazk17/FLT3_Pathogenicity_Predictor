@@ -1,12 +1,13 @@
 import pandas as pd
 import joblib
+import os
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from xgboost import XGBClassifier
 
 print("Loading dataset...")
-df = pd.read_excel("training_dataset.xlsx")
+df = pd.read_csv("../new/new_data.csv")
 
 # Ensure string types for categorical handling
 df["cds_pos"] = df["cds_pos"].astype(str)
@@ -69,8 +70,10 @@ fp = cm[0][1]
 print(f"\nFalse Negatives (Pathogenic predicted as Benign): {fn}")
 print(f"False Positives (Benign predicted as Pathogenic): {fp}")
 
+# Save artifacts to working_models_new
+output_dir = "../working_models_new"
 print("\nSaving model artifacts...")
-joblib.dump(model, "xgb_model.joblib")
-joblib.dump(X_enc.columns.tolist(), "xgb_model_columns.joblib")
+joblib.dump(model, os.path.join(output_dir, "xgb_model.joblib"))
+joblib.dump(X_enc.columns.tolist(), os.path.join(output_dir, "xgb_model_columns.joblib"))
 
 print("XGBoost model and feature columns saved successfully.")

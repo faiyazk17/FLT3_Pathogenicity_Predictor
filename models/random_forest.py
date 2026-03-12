@@ -11,9 +11,9 @@ from sklearn.metrics import (
 
 # Configurations
 
-DATA_PATH = "training_dataset.xlsx"
-MODEL_PATH = "rf_model.joblib"
-COLUMNS_PATH = "model_columns.joblib"
+DATA_PATH = "../new/new_data.csv"
+MODEL_PATH = "../working_models_new/rf_model.joblib"
+COLUMNS_PATH = "../working_models_new/model_columns.joblib"
 
 FEATURE_COLS = [
     "cds_pos", "cds_from", "cds_to",
@@ -25,7 +25,7 @@ LABEL_COL = "Germline classification"
 # Load Data
 
 print("Loading dataset...")
-df = pd.read_excel(DATA_PATH)
+df = pd.read_csv(DATA_PATH)
 
 # Ensure positional features are treated as categorical
 df["cds_pos"] = df["cds_pos"].astype(str)

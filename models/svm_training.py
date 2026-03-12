@@ -1,5 +1,6 @@
 import pandas as pd
 import joblib
+import os
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
@@ -7,7 +8,7 @@ from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
 
 print("Loading dataset...")
-df = pd.read_excel("training_dataset.xlsx")
+df = pd.read_csv("../new/new_data.csv")
 
 # Ensure string types
 df["cds_pos"] = df["cds_pos"].astype(str)
@@ -73,9 +74,11 @@ fp = cm[0][1]
 print(f"\nFalse Negatives (Pathogenic predicted as Benign): {fn}")
 print(f"False Positives (Benign predicted as Pathogenic): {fp}")
 
+# Save artifacts to working_models_new
+output_dir = "../working_models_new"
 print("\nSaving model artifacts...")
-joblib.dump(model, "svm_model.joblib")
-joblib.dump(scaler, "svm_scaler.joblib")
-joblib.dump(X_enc.columns.tolist(), "svm_model_columns.joblib")
+joblib.dump(model, os.path.join(output_dir, "svm_model.joblib"))
+joblib.dump(scaler, os.path.join(output_dir, "svm_scaler.joblib"))
+joblib.dump(X_enc.columns.tolist(), os.path.join(output_dir, "svm_model_columns.joblib"))
 
 print("SVM model, scaler, and feature columns saved successfully.")
